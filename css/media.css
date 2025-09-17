@@ -1,0 +1,40 @@
+/* Phone Screen Settings */
+
+@media only screen and (max-width: 620px) {
+   body {
+      font-size: 14px;
+   }
+   .header {
+      background-image: none;
+   }
+   img {
+      max-width: 100%;
+      height: auto;
+   }
+   hide {
+      display: none;
+   }
+   .listingtable {
+     font-weight: bold;
+   }
+}
+
+/* Tablet Screen Settings */
+
+@media only screen and (min-width: 620px){
+   body {
+      font-size: 18px;
+   }
+   img {
+      max-width: 100%;
+      height: auto
+   }
+}
+
+/* PC Screen Settings */
+
+@media only screen and (min-width: 1000px) {
+   body {
+      font-size: 20px;
+   }
+}

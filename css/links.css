@@ -1,0 +1,38 @@
+a {
+   color             : var(--darkred);
+   text-decoration   : none;
+}
+
+a.img {
+   border	         : 0;
+}
+
+a.tip {
+   text-decoration   : none;
+}
+
+a.tip:hover {
+   position          : relative;
+}
+
+a.tip span {
+   display           : none;
+}
+
+a.tip:hover span {
+   background        : var(--black);
+   opacity           : 1;
+   border            : none;
+   border-radius     : 0.3125em;
+   font-family       : calibri, verdana, arial, comic sans;
+   font-size         : 0.75em;
+   text-decoration   : none;
+   white-space       : nowrap;
+   color             : var(--white);
+   padding           : 0.375em;
+   margin            : 0.625em;
+   display           : block;
+   z-index           : 50; 
+   position          : absolute;
+   top               : 0.625em;
+}

@@ -1,0 +1,99 @@
+/* Flexible / Responsive Tag */
+
+* {
+   box-sizing  : border-box;
+   margin      : 0;
+}
+
+/* Overall Body Properties */
+
+body {
+   background  : var(--lightgrey);
+   color       : var(--darkblue);
+   font-family : Arial;
+   font-weight : bold;
+   font-size   : 0.875em;
+   text-align  : center;
+   text-wrap   : balance;
+   margin      : 0px
+}
+
+/* Header Properties */
+
+.header {
+   position          : sticky;
+   width		         : 100%;
+   top               : 0px;
+   left              : 0px;
+   padding           : 0em;
+   z-index           : 1;
+   background        : var(--white);
+   background-repeat : repeat-x;
+   background-image  : url("../img/line.png");
+   font-size         : 0.75em;
+   overflow          : hidden;
+}
+
+/* Footer Properties */
+
+.footer {
+   position    : fixed;
+   width       : 100%;
+   height      : 2.5em;
+   bottom      : 0px;
+   padding     : 0.625em 0em;
+   z-index     : 1;
+   background  : var(--darkgrey);
+   color       : var(--lightblue);
+   font-size   : 0.75em;
+}
+
+/* Page Content Properties */
+
+.content {
+   position       : relative;
+   width          : 100%;
+   background     : var(--lightgrey);
+   padding-bottom : 2.5em;
+   overflow       : hidden;
+}
+
+
+
+/* DVSwitch Dashboard Properties */
+
+.dvswitch-container {
+   position: inherit;
+   width: 100%;
+   height: auto;
+   max-width: 920px;
+}
+
+
+/* Other Custom Properties */
+
+h1 {
+   font-size   : 1.5em;
+}
+
+mark {
+   background  : inherit;
+   color       : var(--darkred);
+}
+
+.header p {
+   padding     : 0em 0.5em 0.25em; /* Top Sides Bottom */
+}
+
+/* Error Message Properties */
+
+.error {
+   font-size         : 0.75em;
+   text-decoration   : none;
+   font-weight       : bold;
+   color             : var(--red);
+   background-color  : var(--white);
+   width             : 90%;
+   padding           : 0.9375em;
+   margin            : 0.3125em;
+}

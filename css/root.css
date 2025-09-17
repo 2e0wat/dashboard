@@ -1,0 +1,19 @@
+:root {
+    --black		: #000000;
+    --darkblue	: #0B3A78;
+    --lightblue	: #B2D0F8;
+/*
+    --darkblue	: #005184;
+    --lightblue	: #99B9CE;
+*/
+    --lightgrey : #DADADA;
+    --darkgrey	: #161616;
+    --grey	    : #838383;
+    --red		: #FF0000;
+    --darkred	: #CF2E2E;
+    --lightred	: #E79797;
+    --white		: #FFFFFF;
+
+    background-color: var(--lightgrey);
+    font-size: 16px;
+}

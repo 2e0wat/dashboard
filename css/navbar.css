@@ -1,0 +1,27 @@
+.navbar {
+   color       : var(--white);
+   background  : var(--darkblue);
+   font-size   : 1em;
+}
+
+.navbar a {
+  color   : var(--white);
+  padding : 0.6875em 0.875em;
+  display : table-cell;
+  vertical-align : middle;
+}
+
+.navbar a:hover {
+   background : var(--lightblue);
+   color      : var(--darkblue);
+}
+
+.navbarlink {
+   background : var(--darkblue);
+   color      : var(--white);
+}
+
+.navbarlinkactive {
+   background : var(--darkred);
+   color      : var(--white);
+}

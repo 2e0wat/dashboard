@@ -1,0 +1,15 @@
+/* Flex Container Properties */
+
+.flex-container{
+    display         : flex;
+    flex-direction  : row;
+    justify-content : center;
+}
+
+/* Flex Container Layout Properties */
+
+@media (max-width: 1000px) {
+  .flex-container {
+    flex-direction: column;
+  }
+}
