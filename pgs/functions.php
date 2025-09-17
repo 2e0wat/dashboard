@@ -1,264 +1,155 @@
 <?php
 
-session_start();
-
-if (file_exists("./css/theme.php")) { require_once("./css/theme.php");
-      } else { die("theme.php does not exist.");
-   }
-
-if (file_exists("./pgs/functions.php")) { require_once("./pgs/functions.php");
-      } else { die("functions.php does not exist.");
-   }
-
-if (file_exists("./pgs/config.inc.php")) { require_once("./pgs/config.inc.php");
-      } else { die("config.inc.php does not exist.");
-   }
-
-if (!class_exists('ParseXML'))   require_once("./pgs/class.parsexml.php");
-if (!class_exists('Node'))       require_once("./pgs/class.node.php");
-if (!class_exists('xReflector')) require_once("./pgs/class.reflector.php");
-if (!class_exists('Station'))    require_once("./pgs/class.station.php");
-if (!class_exists('Peer'))       require_once("./pgs/class.peer.php");
-if (!class_exists('Interlink'))  require_once("./pgs/class.interlink.php");
-
-$Reflector = new xReflector();
-$Reflector->SetFlagFile("./pgs/country.csv");
-$Reflector->SetPIDFile($Service['PIDFile']);
-$Reflector->SetXMLFile($Service['XMLFile']);
-$Reflector->LoadXML();
-
-if ($CallingHome['Active']) {
-   $CallHomeNow = false;
-   $LastSync = 0;
-   $Hash = "";
-
-   if (!file_exists($CallingHome['HashFile'])) {
-      $Ressource = fopen($CallingHome['HashFile'], "w+");
-      if ($Ressource) {
-         $Hash = CreateCode(16);
-		   @fwrite($Ressource, "<?php\n");
-		   @fwrite($Ressource, "\n".'$Hash = "'.$Hash.'";');
-		   @fwrite($Ressource, "\n\n".'?>');
-		   @fflush($Ressource);
-		   @fclose($Ressource);
-		   @chmod($HashFile, 0777);
-		}
-   } else {
-      require_once($CallingHome['HashFile']);
-   }
-
-   if (@file_exists($CallingHome['LastCallHomefile'])) {
-      if (@is_readable($CallingHome['LastCallHomefile'])) {
-         $tmp      = @file($CallingHome['LastCallHomefile']);
-         if (isset($tmp[0])) {
-            $LastSync = $tmp[0];
-         }
-         unset($tmp);
-      }
-   }
-   
-   if ($LastSync < (time() - $CallingHome['PushDelay'])) {
-      $CallHomeNow = true;
-      $Ressource = @fopen($CallingHome['LastCallHomefile'], "w+");
-	   if ($Ressource) {
-	      @fwrite($Ressource, time());
-		   @fflush($Ressource);
-		   @fclose($Ressource);
-		   @chmod($HashFile, 0777);
-		}
-   }
-
-   if ($CallHomeNow || isset($_GET['callhome'])) {
-      $Reflector->SetCallingHome($CallingHome, $Hash);
-      $Reflector->ReadInterlinkFile();
-      $Reflector->PrepareInterlinkXML();
-      $Reflector->PrepareReflectorXML();
-      $Reflector->CallHome();
-   }
-
-} else {
-   $Hash = "";
+function GetSystemUptime() {
+   $out = exec("uptime");
+   return substr($out, 0, strpos($out, ","));
 }
 
-?>
+function Debug($message) {
+   echo '<br><hr><pre>';
+   print_r($message);
+   echo '</pre><hr><br>';
+}
 
-<!-- -------------------------------- HTML --------------------------------- -->
-
-<!DOCTYPE html>
-
-<!-- -------------------------------- HEAD ---------------------------------- -->
-
-<head>
-
-   <meta charset="UTF-8">
-
-   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-   <meta name="description" content="<?php echo $PageOptions['MetaDescription']; ?>" />
-   <meta name="keywords"    content="<?php echo $PageOptions['MetaKeywords']; ?>" />
-   <meta name="author"      content="<?php echo $PageOptions['MetaAuthor']; ?>" />
-   <meta name="revisit"     content="<?php echo $PageOptions['MetaRevisit']; ?>" />
-   <meta name="robots"      content="<?php echo $PageOptions['MetaAuthor']; ?>" />
-
-   <link rel="stylesheet" type="text/css" href="./css/layout.php">
+function ParseTime($Input) {
    
-   <link rel="icon" href="./favicon.ico" type="image/vnd.microsoft.icon">
+    if (strpos($Input, "<") !== false) {
+       $Input = substr($Input, 0, strpos($Input, "<"));
+    }
+    
+    // Tuesday Tue Nov 17 14:23:22 2015
+    $tmp  = explode(" ", $Input);
+    if (strlen(trim($tmp[3])) == 0) {
+       unset($tmp[3]);
+       $tmp = array_values($tmp);
+    }
 
-   <title>
-      <?php
-         echo $Reflector->GetReflectorName();
-      ?>
-      Reflector Dashboard
-   </title>
+    $tmp1 = explode(":", $tmp[4]); 
+    $month = "";
+    switch (strtolower($tmp[2])) {
+      case 'jan' : $month = 1; break;
+      case 'feb' : $month = 2; break;
+      case 'mar' : $month = 3; break;
+      case 'apr' : $month = 4; break;
+      case 'may' : $month = 5; break;
+      case 'jun' : $month = 6; break;
+      case 'jul' : $month = 7; break;
+      case 'aug' : $month = 8; break;
+      case 'sep' : $month = 9; break;
+      case 'oct' : $month = 10; break;
+      case 'nov' : $month = 11; break;
+      case 'dec' : $month = 12; break;
+      default    : $month = 1; 
+    }
+    return @mktime($tmp1[0], $tmp1[1], $tmp1[2], $month, $tmp[3], $tmp[5]);
+    
+}
 
-   <?php
+function FormatSeconds($seconds) {
+  $seconds = abs($seconds); 
+  return sprintf("%d days %02d:%02d:%02d", $seconds/60/60/24,($seconds/60/60)%24,($seconds/60)%60,$seconds%60);
+} 
 
-      if ($PageOptions['PageRefreshActive']) {
-         echo '
-            <script src="./js/jquery-1.12.4.min.js"></script>
-            <script>
-               var PageRefresh;
-               function ReloadPage() {
-                  $.get("./index.php'.(isset($_GET['show'])?'?show='.$_GET['show']:'').'", function(data) {
-                     var BodyStart = data.indexOf("<bo"+"dy");
-                     var BodyEnd = data.indexOf("</bo"+"dy>");
-                     if ((BodyStart >= 0) && (BodyEnd > BodyStart)) {
-                        BodyStart = data.indexOf(">", BodyStart)+1;
-                        $("body").html(data.substring(BodyStart, BodyEnd));
-                     }
-                  })
-                  .always(function() {
-                     PageRefresh = setTimeout(ReloadPage, '.$PageOptions['PageRefreshDelay'].');
-                  });
-               }';
-               if (!isset($_GET['show']) || (($_GET['show'] != 'liveircddb') && ($_GET['show'] != 'reflectors') && ($_GET['show'] != 'interlinks'))) {
-                  echo '
-                     PageRefresh = setTimeout(ReloadPage, '.$PageOptions['PageRefreshDelay'].');';
-               }
-               echo '
-                  function SuspendPageRefresh() {
-                     clearTimeout(PageRefresh);
-                  }
-            </script>';
+function CreateCode ($laenge) {   
+	$zeichen = "1234567890abcdefghijklmnopqrstuvwyxzABCDEFGHIJKLMNAOPQRSTUVWYXZ";   
+	$out = "";
+	for ($i=1;$i<=$laenge;$i++){ 
+		$out .= $zeichen[mt_rand(0,(strlen($zeichen)-1))];       
+	}         
+	return $out;  
+}
+
+function VNStatLocalize($str) {
+  global $L;
+ 	if (isset($L[$str])) {
+      return $L[$str];
+  }
+  else {
+      return $str;
+  }
+}
+
+function VNStatGetData($iface, $vnstat_bin) {
+   $vnstat_data = array();
+
+   $fd = @popen("$vnstat_bin --exportdb -i $iface", "r");
+   if (is_resource($fd)) {
+      $buffer = '';
+      while (!feof($fd)) {
+       	 $buffer .= fgets($fd);
       }
+     	$vnstat_data = explode("\n", $buffer);
+     	pclose($fd);
+   }
 
-      if (!isset($_GET['show'])) $_GET['show'] = "";
+   $day = array();
+   $hour = array();
+   $month = array();
+   $top = array();
 
-   ?>
+   if (isset($vnstat_data[0]) && strpos($vnstat_data[0], 'Error') !== false) {
+      return;
+   }
 
-</head>
+   foreach($vnstat_data as $line) {
+      $d = explode(';', trim($line));
+      if ($d[0] == 'd') {
+         $day[$d[1]]['time']  = $d[2];
+         $day[$d[1]]['rx']    = $d[3] * 1024 + $d[5];
+         $day[$d[1]]['tx']    = $d[4] * 1024 + $d[6];
+         $day[$d[1]]['act']   = $d[7];
+         $day[$d[1]]['rx2']   = $d[5];
+         $day[$d[1]]['tx2']   = $d[6];
+      }
+      else if ($d[0] == 'm') {
+         $month[$d[1]]['time'] = $d[2];
+         $month[$d[1]]['rx']   = $d[3] * 1024 + $d[5];
+         $month[$d[1]]['tx']   = $d[4] * 1024 + $d[6];
+         $month[$d[1]]['act']  = $d[7];
+         $month[$d[1]]['rx2']  = $d[5];
+         $month[$d[1]]['tx2']  = $d[6];
+      }
+      else if ($d[0] == 'h') {
+         $hour[$d[1]]['time'] = $d[2];
+         $hour[$d[1]]['rx']   = $d[3];
+         $hour[$d[1]]['tx']   = $d[4];
+         $hour[$d[1]]['act']  = 1;
+      }
+      else if ($d[0] == 't') {
+         $top[$d[1]]['time'] = $d[2];
+         $top[$d[1]]['rx']   = $d[3] * 1024 + $d[5];
+         $top[$d[1]]['tx']   = $d[4] * 1024 + $d[6];
+         $top[$d[1]]['act']  = $d[7];
+      }
+      else {
+         $summary[$d[0]] = isset($d[1]) ? $d[1] : '';
+      }
+   }
 
-<!-- -------------------------------- BODY --------------------------------- -->
-
-<body>
+   rsort($day);
+   rsort($month);
+   rsort($hour);
    
-   <?php if (file_exists("./tracking.php")) { include_once("tracking.php"); }?>
+   return array($day, $month, $hour, $day, $month, $top, $summary);
+}
 
-   <div class="primary-container">
 
-<!-- ------------------------------- Header -------------------------------- -->
+function kbytes_to_string($kb) {
+   $byte_notation  = null;
+   $units          = array('TB','GB','MB','KB');
+   $scale          = 1024*1024*1024;
+   $ui             = 0;
+   $custom_size = isset($byte_notation) && in_array($byte_notation, $units);
 
-   <header class="header">
+   while ((($kb < $scale) && ($scale > 1)) || $custom_size) {
+      $ui++;
+      $scale = $scale / 1024;
+      if ($custom_size && $units[$ui] == $byte_notation) {
+         break;
+      }
+   }
+   return sprintf("%0.2f %s", ($kb/$scale),$units[$ui]);
+}
 
-      <img src="/img/header.png">
-      
-      <p>
-         We welcome <mark>ALL</mark> to use the reflector. Module A supports Multi-Protocol Transcoding,
-         <a href="https://stats.allstarlink.org/stats/621821" target="_blank">AllStar (621821)</a>,
-         <a href="https://peanut.pa7lim.nl" target="_blank">Peanut (XLX178A)</a>,
-   	   and
-         <a href="https://tgif.network/tgprofile.php?id=178" target="_blank">TGIF (178)</a>.
-         <hide>
-         Please note the AllStar connection is G4BUX-A. Modules B-F are dedicated to individual modes.
-         Please visit our <a href="https://buxtonradioamateurs.wixsite.com/buxton-radio-club" target="_blank">Home Page</a>
-         to find out more about our club -
-         <a href="https://www.qrz.com/db/G4BUX" target="_blank">G4BUX</a>
-         /
-         <a href="https://www.qrz.com/db/G8BUX" target="_blank">G8BUX</a>.
-         </hide>
-      </p>
-   
 
-   <!-- ------------------------ Navigation Bar ------------------------- -->
-
-      <div class="navbar" align=center>
-            <a href="./index.php" class="navbarlink<?php if ($_GET['show'] == '') { echo 'active'; } ?>">Users</a>
-            <a href="./index.php?show=repeaters" class="navbarlink<?php if ($_GET['show'] == 'repeaters') { echo 'active'; } ?>"><hide>Repeaters / </hide>Nodes (<?php echo $Reflector->NodeCount(); ?>)</a>
-            <a href="./index.php?show=modules" class="navbarlink<?php if ($_GET['show'] == 'modules') { echo 'active'; } ?>">Modules</a>
-            <a href="./index.php?show=reflectors" class="navbarlink<?php if ($_GET['show'] == 'reflectors') { echo 'active'; } ?>">Reflectors</a>
-            <a href="./index.php?show=allstar" class="navbarlink<?php if ($_GET['show'] == 'allstar') { echo 'active'; } ?>">AllStar Dash</a>
-            <a href="./index.php?show=tgif" class="navbarlink<?php if ($_GET['show'] == 'tgif') { echo 'active'; } ?>">TGIF Dash</a>
-
-               <?php
-               if ($PageOptions['Traffic']['Show']) {
-                  echo '
-                     <a href="./index.php?show=traffic" class="navbarlink';
-                        if ($_GET['show'] == 'traffic') { echo 'active'; }
-                        echo '">Traffic Stats
-                     </a>';
-               }
-               
-   		      if ($PageOptions['IRCDDB']['Show']) {
-                  echo '
-                     <a href="./index.php?show=liveircddb" class="navbarlink';
-                        if ($_GET['show'] == 'liveircddb') { echo 'active'; }
-                        echo '">D-Star Live
-                     </a>';
-               }
-               
-               ?>
-      </div>
-
-   </header>
-
-<!-- ---------------------------- Page Content ----------------------------- -->
-
-   <div class="content" align="center">
-   
-      <?php
-      
-         if ($CallingHome['Active']) {
-            if (!is_readable($CallingHome['HashFile']) && (!is_writeable($CallingHome['HashFile']))) {
-               echo '
-                  <div class="error">
-                     Your private hash in '.$CallingHome['HashFile'].' could not be created. Please check your config file and the permissions for the defined folder.
-                  </div>';
-            }
-         }
-
-         switch ($_GET['show']) {
-            case 'users'      : require_once("./pgs/users.php"); break;
-            case 'repeaters'  : require_once("./pgs/repeaters.php"); break;
-            case 'liveircddb' : require_once("./pgs/liveircddb.php"); break;
-            case 'peers'      : require_once("./pgs/peers.php"); break;
-            case 'modules'    : require_once("./pgs/modules.php"); break;
-            case 'reflectors' : require_once("./pgs/reflectors.php"); break;
-            case 'traffic'    : require_once("./pgs/traffic.php"); break;
-            case 'allstar'    : require_once("./pgs/allstar.php"); break;
-            case 'tgif'       : require_once("./pgs/tgif.php"); break;
-            default           : require_once("./pgs/users.php");
-         }
-
-      ?>
-   
-   </div>
-
-   <!-- ------------------------------- Footer ------------------------------- -->
-
-   <footer class="footer" align="center">
-      <mark>
-         <?php
-            echo $Reflector->GetReflectorName();
-         ?>
-      </mark>
-      is maintained by Ash -
-      <a href="https://www.qrz.com/db/2E0WAT">2E0WAT</a>
-      & Jon -
-      <a href="https://www.qrz.com/db/EA5JMN">EA5JMN</a> / <a href="https://www.qrz.com/db/G7NFK">G7NFK</a>
-   </footer>
-
-   </div>
-
-</body>
-
-</html>
+?>
